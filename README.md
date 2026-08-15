@@ -311,3 +311,6 @@ Possible improvements for this project:
 **Khushwant Kumawat**
 
 This project was created as a Machine Learning project to understand the complete workflow from **custom dataset → model training → model serialization → Flask deployment**.
+
+<img width="1900" height="864" alt="image" src="https://github.com/user-attachments/assets/27b3babe-fe33-4c49-a7c3-4db34091f5c6" />
+
