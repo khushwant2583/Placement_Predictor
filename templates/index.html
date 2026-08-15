@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Placement Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#141b25;
+    --panel:#1c2532;
+    --panel-2:#232f3f;
+    --line:#3a4658;
+    --line-soft:#2a3444;
+    --paper:#ece5d3;
+    --paper-line:#c9bfa4;
+    --text:#e9e3d4;
+    --text-muted:#8b95a8;
+    --teal:#4fb3a4;
+    --amber:#e2a13d;
+    --coral:#df6553;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% -10%, #202b3a 0%, transparent 55%),
+      var(--ink);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding:48px 24px 80px;
+    display:flex;
+    justify-content:center;
+  }
+  .wrap{width:100%;max-width:1080px;}
+
+  header{margin-bottom:40px; opacity:0; animation:riseIn .7s ease forwards;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--teal);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:8px;height:8px;border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 0 4px rgba(79,179,164,.18);
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:clamp(34px, 5vw, 52px);
+    margin:0 0 12px;
+    letter-spacing:-.01em;
+  }
+  header p{
+    color:var(--text-muted);
+    max-width:560px;
+    line-height:1.55;
+    margin:0;
+    font-size:15px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 340px 1fr;
+    gap:24px;
+    align-items:start;
+  }
+  @media (max-width: 860px){
+    .grid{grid-template-columns:1fr;}
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:var(--radius);
+    padding:26px;
+    opacity:0;
+    animation:riseIn .7s ease forwards;
+  }
+  .card + .card{margin-top:24px;}
+  .grid > .card:nth-of-type(1){animation-delay:.05s;}
+  .grid > .card:nth-of-type(2){animation-delay:.15s;}
+
+  .card h2{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin:0 0 22px;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--line-soft);
+  }
+
+  /* ---- Input controls ---- */
+  .field{margin-bottom:26px;}
+  .field:last-of-type{margin-bottom:0;}
+  .field-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:10px;
+  }
+  .field-label{font-size:14px; color:var(--text);}
+  .field-label span{color:var(--text-muted); font-size:12px;}
+  .field-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:20px;
+    font-weight:500;
+    color:var(--amber);
+    background:var(--panel-2);
+    border:1px solid var(--line-soft);
+    border-radius:8px;
+    padding:4px 10px;
+    min-width:64px;
+    text-align:center;
+  }
+  input[type="range"]{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:4px;
+    border-radius:2px;
+    background:linear-gradient(90deg, var(--teal) 0%, var(--teal) var(--fill,50%), var(--line) var(--fill,50%), var(--line) 100%);
+    outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:18px;height:18px;
+    border-radius:50%;
+    background:var(--paper);
+    border:3px solid var(--teal);
+    cursor:pointer;
+    margin-top:0;
+    box-shadow:0 0 0 4px rgba(79,179,164,.15);
+    transition:box-shadow .15s ease;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover{box-shadow:0 0 0 7px rgba(79,179,164,.2);}
+  input[type="range"]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;
+    background:var(--paper); border:3px solid var(--teal); cursor:pointer;
+  }
+  .range-scale{
+    display:flex;justify-content:space-between;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;color:var(--text-muted);
+    margin-top:8px;
+  }
+
+  .predict-btn{
+    width:100%;
+    margin-top:6px;
+    padding:15px 20px;
+    border-radius:9px;
+    border:none;
+    background:var(--teal);
+    color:#0e1a17;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    letter-spacing:.02em;
+    cursor:pointer;
+    transition:transform .12s ease, background .2s ease, box-shadow .2s ease;
+    box-shadow:0 8px 20px -8px rgba(79,179,164,.5);
+  }
+  .predict-btn:hover{background:#5fc2b3; transform:translateY(-1px);}
+  .predict-btn:active{transform:translateY(0px) scale(.99);}
+  .predict-btn.loading{opacity:.7; cursor:progress;}
+
+  .note{
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.6;
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px solid var(--line-soft);
+  }
+  .note code{
+    font-family:'IBM Plex Mono', monospace;
+    background:var(--panel-2);
+    padding:1px 5px;
+    border-radius:4px;
+    color:var(--teal);
+  }
+
+  /* ---- Graph panel ---- */
+  .graph-card{padding-bottom:20px;}
+  .paper{
+    background:var(--paper);
+    border-radius:10px;
+    padding:18px 18px 10px;
+    position:relative;
+  }
+  .axis-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    fill:#5b5342;
+    letter-spacing:.04em;
+  }
+  .legend{
+    display:flex;
+    gap:22px;
+    margin-top:14px;
+    padding-left:4px;
+    font-size:12px;
+    color:var(--text-muted);
+  }
+  .legend span{display:inline-flex; align-items:center; gap:7px;}
+  .dot{width:9px;height:9px;border-radius:50%; display:inline-block;}
+
+  /* ---- Readout ---- */
+  .readout-body{
+    display:flex;
+    align-items:center;
+    gap:28px;
+    flex-wrap:wrap;
+  }
+  .gauge-wrap{position:relative; width:220px; flex:0 0 auto;}
+  .gauge-num{
+    position:absolute;
+    top:56%; left:50%;
+    transform:translate(-50%,-50%);
+    text-align:center;
+  }
+  .gauge-num .pct{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:34px;
+    font-weight:600;
+    color:var(--text);
+  }
+  .gauge-num .pct::after{content:"%"; font-size:16px; color:var(--text-muted);}
+  .gauge-num .lbl{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-top:2px;
+  }
+  .verdict{flex:1; min-width:200px;}
+  .verdict-title{
+    font-family:'Fraunces', serif;
+    font-size:26px;
+    margin:0 0 8px;
+    transition:color .3s ease;
+  }
+  .verdict-sub{
+    font-size:13.5px;
+    color:var(--text-muted);
+    line-height:1.6;
+    margin:0;
+  }
+  .verdict-sub b{color:var(--text); font-weight:500;}
+
+  @keyframes riseIn{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001s !important; transition-duration:.001s !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Student Placement Model</div>
+    <h1>Placement Predictor</h1>
+    <p>Move the sliders to set a student's IQ and CGPA. The plot on the right shows where that student falls against the model's decision boundary — run the prediction to get a placement probability.</p>
+  </header>
+
+  <div class="grid">
+    <!-- INPUT PANEL -->
+    <div class="card">
+      <h2>Student Inputs</h2>
+
+      <div class="field">
+        <div class="field-top">
+          <div class="field-label">IQ <span>&nbsp;— cognitive score</span></div>
+          <div class="field-value" id="iqValue">100</div>
+        </div>
+        <input type="range" id="iqSlider" min="70" max="160" value="100" step="1">
+        <div class="range-scale"><span>70</span><span>160</span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-top">
+          <div class="field-label">CGPA <span>&nbsp;— out of 10</span></div>
+          <div class="field-value" id="cgpaValue">6.0</div>
+        </div>
+        <input type="range" id="cgpaSlider" min="0" max="10" value="6" step="0.1">
+        <div class="range-scale"><span>0.0</span><span>10.0</span></div>
+      </div>
+
+      <button class="predict-btn" id="predictBtn">Predict Placement</button>
+
+      <div class="note">
+        Predictions are served live by your trained model via <code>POST /predict</code> on the Flask backend.
+      </div>
+    </div>
+
+    <div>
+      <!-- GRAPH -->
+      <div class="card graph-card">
+        <h2>Decision Space</h2>
+        <div class="paper">
+          <svg id="plot" viewBox="0 0 560 340" width="100%" style="display:block;"></svg>
+        </div>
+        <div class="legend">
+          <span><i class="dot" style="background:#4fb3a4"></i>Placed (historical)</span>
+          <span><i class="dot" style="background:#df6553"></i>Not placed (historical)</span>
+          <span><i class="dot" style="background:#e2a13d;box-shadow:0 0 0 3px rgba(226,161,61,.25)"></i>This student</span>
+        </div>
+      </div>
+
+      <!-- READOUT -->
+      <div class="card">
+        <h2>Prediction Readout</h2>
+        <div class="readout-body">
+          <div class="gauge-wrap">
+            <svg viewBox="0 0 220 130" width="220" height="130">
+              <path d="M20,110 A90,90 0 0 1 200,110" fill="none" stroke="#2a3444" stroke-width="14" stroke-linecap="round" pathLength="100"/>
+              <path id="gaugeFill" d="M20,110 A90,90 0 0 1 200,110" fill="none" stroke="#4fb3a4" stroke-width="14" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" style="transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1), stroke .5s ease;"/>
+            </svg>
+            <div class="gauge-num">
+              <div class="pct" id="pctText">—</div>
+              <div class="lbl">probability</div>
+            </div>
+          </div>
+          <div class="verdict">
+            <p class="verdict-title" id="verdictTitle">Awaiting input</p>
+            <p class="verdict-sub" id="verdictSub">Set the sliders and press <b>Predict Placement</b> to see the model's estimate for this student.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- config ----------
+  const IQ_MIN=70, IQ_MAX=160, CGPA_MIN=0, CGPA_MAX=10;
+  const svgNS="http://www.w3.org/2000/svg";
+  const margin={top:16,right:16,bottom:34,left:38};
+  const plotEl=document.getElementById('plot');
+  const vb=plotEl.viewBox.baseVal;
+  const W=vb.width, H=vb.height;
+  const pw=W-margin.left-margin.right, ph=H-margin.top-margin.bottom;
+
+  function xScale(iq){ return margin.left + (iq-IQ_MIN)/(IQ_MAX-IQ_MIN)*pw; }
+  function yScale(cgpa){ return margin.top + (CGPA_MAX-cgpa)/(CGPA_MAX-CGPA_MIN)*ph; }
+
+  // ---------- demo model ----------
+  // Stand-in linear decision function. Swap this (or the whole runPrediction
+  // function) for a call to your real trained model's API.
+  function sigmoid(z){ return 1/(1+Math.exp(-z)); }
+  function demoModelProbability(iq, cgpa){
+    const z = (iq-100)/15*1.05 + (cgpa-6)/2*1.55 - 0.25;
+    return sigmoid(z);
+  }
+  function boundaryCgpaForIq(iq){
+    // solves demoModelProbability(iq,cgpa)=0.5 for cgpa
+    const z0 = (iq-100)/15*1.05 - 0.25;
+    return 6 + (2/1.55)*(-z0);
+  }
+
+  // ---------- seeded random for stable decorative sample points ----------
+  let seed=42;
+  function rnd(){ seed=(seed*9301+49297)%233280; return seed/233280; }
+  const samples=[];
+  for(let i=0;i<42;i++){
+    const iq = IQ_MIN + rnd()*(IQ_MAX-IQ_MIN);
+    const cgpa = CGPA_MIN + rnd()*(CGPA_MAX-CGPA_MIN)*0.95 + 0.2;
+    let p = demoModelProbability(iq,cgpa);
+    if(rnd()<0.14) p = 1-p; // a bit of real-world noise
+    samples.push({iq,cgpa,placed:p>0.5});
+  }
+
+  // ---------- draw static plot chrome ----------
+  function el(tag, attrs){
+    const e=document.createElementNS(svgNS,tag);
+    for(const k in attrs) e.setAttribute(k,attrs[k]);
+    return e;
+  }
+
+  function buildPlot(){
+    plotEl.innerHTML='';
+    // dot-grid background pattern
+    const defs=el('defs',{});
+    const pattern=el('pattern',{id:'dots',width:20,height:20,patternUnits:'userSpaceOnUse'});
+    pattern.appendChild(el('circle',{cx:1,cy:1,r:1,fill:'#c9bfa4'}));
+    defs.appendChild(pattern);
+    plotEl.appendChild(defs);
+
+    plotEl.appendChild(el('rect',{x:margin.left,y:margin.top,width:pw,height:ph,fill:'url(#dots)'}));
+
+    // axes
+    plotEl.appendChild(el('line',{x1:margin.left,y1:margin.top+ph,x2:margin.left+pw,y2:margin.top+ph,stroke:'#8f8465','stroke-width':1}));
+    plotEl.appendChild(el('line',{x1:margin.left,y1:margin.top,x2:margin.left,y2:margin.top+ph,stroke:'#8f8465','stroke-width':1}));
+
+    // ticks
+    [70,90,110,130,150].forEach(iq=>{
+      const x=xScale(iq);
+      const t=el('text',{x:x,y:margin.top+ph+18,'text-anchor':'middle',class:'axis-label'});
+      t.textContent=iq; plotEl.appendChild(t);
+    });
+    [0,2.5,5,7.5,10].forEach(c=>{
+      const y=yScale(c);
+      const t=el('text',{x:margin.left-8,y:y+4,'text-anchor':'end',class:'axis-label'});
+      t.textContent=c; plotEl.appendChild(t);
+    });
+    const xl=el('text',{x:margin.left+pw/2,y:H-2,'text-anchor':'middle',class:'axis-label'});
+    xl.textContent='IQ'; plotEl.appendChild(xl);
+    const yl=el('text',{x:12,y:margin.top+ph/2,'text-anchor':'middle',class:'axis-label',transform:`rotate(-90 12 ${margin.top+ph/2})`});
+    yl.textContent='CGPA'; plotEl.appendChild(yl);
+
+    // decision boundary line
+    const p1={x:xScale(IQ_MIN), y:yScale(Math.max(CGPA_MIN,Math.min(CGPA_MAX,boundaryCgpaForIq(IQ_MIN))))};
+    const p2={x:xScale(IQ_MAX), y:yScale(Math.max(CGPA_MIN,Math.min(CGPA_MAX,boundaryCgpaForIq(IQ_MAX))))};
+    plotEl.appendChild(el('line',{x1:p1.x,y1:p1.y,x2:p2.x,y2:p2.y,stroke:'#5b5342','stroke-width':1.4,'stroke-dasharray':'5 4'}));
+
+    // historical sample dots
+    samples.forEach(s=>{
+      plotEl.appendChild(el('circle',{
+        cx:xScale(s.iq), cy:yScale(s.cgpa), r:4,
+        fill: s.placed? '#4fb3a4':'#df6553',
+        opacity:0.55
+      }));
+    });
+
+    // live student marker
+    const marker=el('circle',{id:'liveDot', cx:xScale(100), cy:yScale(6), r:7, fill:'#e2a13d', stroke:'#141b25','stroke-width':2});
+    marker.style.transition='cx .25s ease, cy .25s ease';
+    plotEl.appendChild(marker);
+  }
+  buildPlot();
+
+  // ---------- controls ----------
+  const iqSlider=document.getElementById('iqSlider');
+  const cgpaSlider=document.getElementById('cgpaSlider');
+  const iqValue=document.getElementById('iqValue');
+  const cgpaValue=document.getElementById('cgpaValue');
+  const liveDotGetter=()=>document.getElementById('liveDot');
+
+  function updateSliderFill(slider){
+    const min=+slider.min, max=+slider.max, val=+slider.value;
+    slider.style.setProperty('--fill', ((val-min)/(max-min)*100)+'%');
+  }
+
+  function syncFromInputs(){
+    const iq=+iqSlider.value, cgpa=+cgpaSlider.value;
+    iqValue.textContent=iq;
+    cgpaValue.textContent=cgpa.toFixed(1);
+    updateSliderFill(iqSlider);
+    updateSliderFill(cgpaSlider);
+    const dot=liveDotGetter();
+    if(dot){ dot.setAttribute('cx', xScale(iq)); dot.setAttribute('cy', yScale(cgpa)); }
+  }
+  iqSlider.addEventListener('input', syncFromInputs);
+  cgpaSlider.addEventListener('input', syncFromInputs);
+  syncFromInputs();
+
+  // ---------- prediction ----------
+  const btn=document.getElementById('predictBtn');
+  const gaugeFill=document.getElementById('gaugeFill');
+  const pctText=document.getElementById('pctText');
+  const verdictTitle=document.getElementById('verdictTitle');
+  const verdictSub=document.getElementById('verdictSub');
+
+  async function runPrediction(iq, cgpa){
+    const res = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ iq, cgpa })
+    });
+    if(!res.ok){
+      const err = await res.json().catch(()=>({error:'Request failed'}));
+      throw new Error(err.error || 'Prediction failed');
+    }
+    const data = await res.json();
+    return data.probability; // 0..1
+  }
+
+  btn.addEventListener('click', async ()=>{
+    const iq=+iqSlider.value, cgpa=+cgpaSlider.value;
+    btn.classList.add('loading');
+    btn.textContent='Running model…';
+    try{
+      const prob = await runPrediction(iq, cgpa);
+      const pct = Math.round(prob*100);
+      const offset = 100 - pct;
+      gaugeFill.style.strokeDashoffset = offset;
+      gaugeFill.style.stroke = prob>=0.5 ? '#4fb3a4' : '#df6553';
+      pctText.textContent = pct;
+
+      if(prob>=0.5){
+        verdictTitle.textContent='Likely Placed';
+        verdictTitle.style.color='#4fb3a4';
+        verdictSub.innerHTML=`With an IQ of <b>${iq}</b> and a CGPA of <b>${cgpa.toFixed(1)}</b>, the model estimates a <b>${pct}%</b> chance of placement.`;
+      } else {
+        verdictTitle.textContent='Placement Unlikely';
+        verdictTitle.style.color='#df6553';
+        verdictSub.innerHTML=`With an IQ of <b>${iq}</b> and a CGPA of <b>${cgpa.toFixed(1)}</b>, the model estimates only a <b>${pct}%</b> chance of placement.`;
+      }
+    } catch (err){
+      verdictTitle.textContent='Prediction failed';
+      verdictTitle.style.color='#df6553';
+      verdictSub.textContent = err.message || 'Could not reach the model. Check that the server is running.';
+    } finally {
+      btn.classList.remove('loading');
+      btn.textContent='Predict Placement';
+    }
+  });
+</script>
+</body>
+</html>
